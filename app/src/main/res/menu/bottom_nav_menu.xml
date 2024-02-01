@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/menu_scan"
+        android:icon="@drawable/qr_icon"
+        android:id="@+id/scan" />
+    <item
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/menu_recent"
+        android:icon="@drawable/recent_icon"
+        android:id="@+id/recent"/>
+    <item
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/menu_fav"
+        android:icon="@drawable/favourite_icon"
+        android:id="@+id/favourites"/>
+</menu>
