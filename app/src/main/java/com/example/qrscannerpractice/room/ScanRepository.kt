@@ -13,6 +13,10 @@ class ScanRepository (private val scanResultDao: ScanResultDao) {
         scanResultDao.insertItem(scanItem)
     }
 
+    suspend fun updateItem (scanItem: ScanItem) {
+        scanResultDao.updateItem(scanItem)
+    }
+
     @WorkerThread
     suspend fun deleteItem (scanItem: ScanItem) {
         scanResultDao.deleteItem(scanItem)

@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -18,6 +19,9 @@ interface ScanResultDao {
 
     @Insert (onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertItem (scanItem : ScanItem)
+
+    @Update
+    suspend fun updateItem(scanItem: ScanItem)
 
     @Delete
     suspend fun deleteItem (scanItem: ScanItem)

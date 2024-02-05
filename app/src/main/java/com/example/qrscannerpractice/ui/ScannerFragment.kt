@@ -57,24 +57,30 @@ class ScannerFragment : Fragment(), ZBarScannerView.ResultHandler {
     }
 
     override fun handleResult(result: Result?) {
-        qrResult(result?.contents)
-        activity?.let {
-            (it as MainActivity).showDialog(result?.contents)
-        }
-    }
-
-    private fun qrResult(content: String?) {
-        if (content.isNullOrEmpty()) {
+        if (result?.contents.isNullOrEmpty())
             Toast.makeText(context, R.string.empty_result, Toast.LENGTH_SHORT).show()
-        } else {
-            saveData(content)
+        else {
+            val newResult = ScanItem(result!!.contents, false)
+            viewModel.insertItem(newResult)
+            activity?.let {
+                (it as MainActivity).showDialog(newResult)
+            }
         }
+
     }
 
-    private fun saveData(content: String) {
-        val newResult = ScanItem (content, false)
-        viewModel.insertItem(newResult)
-    }
+//    private fun qrResult(content: String?) {
+//        if (content.isNullOrEmpty()) {
+//            Toast.makeText(context, R.string.empty_result, Toast.LENGTH_SHORT).show()
+//        } else {
+//            saveData(content)
+//        }
+//    }
+//
+//    private fun saveData(content: String) {
+//        val newResult = ScanItem (content, false)
+//        viewModel.insertItem(newResult)
+//    }
 
     companion object {
         @JvmStatic

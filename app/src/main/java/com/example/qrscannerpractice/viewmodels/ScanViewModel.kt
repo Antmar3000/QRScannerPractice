@@ -19,9 +19,14 @@ class ScanViewModel (private val repository: ScanRepository) : ViewModel() {
         repository.insertItem(scanItem)
     }
 
+    fun updateItem (scanItem: ScanItem) = viewModelScope.launch {
+        repository.updateItem(scanItem)
+    }
+
     fun deleteItem (scanItem: ScanItem) = viewModelScope.launch {
         repository.deleteItem(scanItem)
     }
+
 }
 
 class ScanItemModelFactory (private val repository: ScanRepository) : ViewModelProvider.Factory {
