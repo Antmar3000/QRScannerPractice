@@ -1,7 +1,7 @@
 package com.example.qrscannerpractice
 
 import android.Manifest
-import android.app.Dialog
+import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -9,38 +9,33 @@ import android.content.Intent
 import androidx.activity.viewModels
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraManager
-import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.view.Window
-import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.getSystemService
 import androidx.fragment.app.Fragment
 import com.example.qrscannerpractice.databinding.ActivityMainBinding
 import com.example.qrscannerpractice.databinding.ResultDialogLayoutBinding
 import com.example.qrscannerpractice.room.ScanItem
-import com.example.qrscannerpractice.ui.FavouritesFragment
-import com.example.qrscannerpractice.ui.RecentFragment
-import com.example.qrscannerpractice.ui.ScannerFragment
-import com.example.qrscannerpractice.viewmodels.ScanItemModelFactory
+import com.example.qrscannerpractice.ui.Router
 import com.example.qrscannerpractice.viewmodels.ScanViewModel
-import me.dm7.barcodescanner.zbar.Result
-import me.dm7.barcodescanner.zbar.ZBarScannerView
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private val binding: ActivityMainBinding by lazy { ActivityMainBinding.inflate(layoutInflater) }
-    private val bindingDialog : ResultDialogLayoutBinding by lazy { ResultDialogLayoutBinding.inflate(layoutInflater) }
 
 
-    private val viewModel: ScanViewModel by viewModels {
-        ScanItemModelFactory((application as ScanApplication).repository)
-    }
+//    private val viewModel: ScanViewModel by viewModels ()
+
+    private val viewModel: ScanViewModel by viewModels()
+
+    @Inject
+    lateinit var router : Router
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,30 +43,21 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         viewModel.historyList.observe(this) {}
+        viewModel.showDialog.observe(this) {
+            showDialog(it)
+        }
+        viewModel.fragment.observe(this) {
+            showFragment(router.choose(it))
+        }
 
         checkCameraPermission()
 
         binding.bottomNavigationView.selectedItemId = R.id.scan
 
         binding.bottomNavigationView.setOnItemSelectedListener {
-            when (it.itemId) {
-                R.id.scan -> {
-                    showFragment(ScannerFragment.newInstance())
-                }
-
-                R.id.recent -> {
-                    showFragment(RecentFragment.newInstance())
-                }
-
-                R.id.favourites -> {
-                    showFragment(FavouritesFragment.newInstance())
-                }
-            }
+            viewModel.onMenuClicked(it.itemId)
             true
         }
-
-        var cameraFlash: Boolean =
-            packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)
 
         binding.buttonFlash.setOnCheckedChangeListener { _, isChecked ->
             setFlashlight(isChecked)
@@ -83,12 +69,9 @@ class MainActivity : AppCompatActivity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) !=
             PackageManager.PERMISSION_GRANTED
         ) {
-
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 3000)
-
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), Constances.REQUEST_CODE)
         } else {
-            showFragment(ScannerFragment.newInstance())
-
+            viewModel.onPermissionGranted()
         }
     }
 
@@ -103,25 +86,26 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode == 3000 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            showFragment(ScannerFragment.newInstance())
+        if (requestCode == Constances.REQUEST_CODE && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            viewModel.onPermissionGranted()
         }
     }
 
 
-    fun showDialog(scanItem: ScanItem) {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(bindingDialog.root)
-        dialog.setCancelable(false)
-        bindingDialog.resultTextView.text = scanItem.message
-        bindingDialog.buttonFavourite.setImageResource(
-            if (scanItem.favourite) R.drawable.star_icon else R.drawable.favourite_icon
-        )
-        bindingDialog.buttonCopy.setOnClickListener { copyResultToClipboard(scanItem.message) }
-        bindingDialog.buttonFavourite.setOnClickListener { setFavourite(scanItem) }
-        bindingDialog.buttonShare.setOnClickListener { shareResult(scanItem.message) }
-        bindingDialog.buttonClose.setOnClickListener { dialog.dismiss() }
+    private fun showDialog(scanItem: ScanItem) {
+        val bindingDialog = ResultDialogLayoutBinding.inflate(layoutInflater)
+        AlertDialog.Builder(this).apply { setView(bindingDialog.root) }.create().let { dialog ->
+            bindingDialog.resultTextView.text = scanItem.message
+            bindingDialog.buttonFavourite.setImageResource(
+                if (scanItem.favourite) R.drawable.star_icon else R.drawable.favourite_icon
+            )
+            bindingDialog.buttonFavourite.setOnClickListener { setFavourite(scanItem) }
+            bindingDialog.buttonShare.setOnClickListener { shareResult(scanItem.message) }
+            bindingDialog.buttonCopy.setOnClickListener { copyResultToClipboard(scanItem.message) }
+            bindingDialog.buttonClose.setOnClickListener { dialog.dismiss() }
+            dialog.show()
+        }
+
 
     }
 
@@ -129,7 +113,7 @@ class MainActivity : AppCompatActivity() {
         val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clipData = ClipData.newPlainText("result", result)
         clipboardManager.setPrimaryClip(clipData)
-        Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.copied, Toast.LENGTH_SHORT).show()
     }
 
     private fun shareResult(result: String?) {
@@ -140,13 +124,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setFavourite(scanItem: ScanItem) {
-        if (scanItem.favourite) {
-            viewModel.updateItem(scanItem.copy(message = scanItem.message, favourite = false))
-        } else viewModel.updateItem(scanItem.copy(message = scanItem.message, favourite = true))
+        viewModel.updateItemFavourite(scanItem)
     }
 
     private fun setFlashlight(flashlightState: Boolean) {
-        val cameraManager: CameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
+        val cameraManager : CameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
         val cameraId: String
         try {
             cameraId = cameraManager.cameraIdList[0]
@@ -156,6 +138,14 @@ class MainActivity : AppCompatActivity() {
             e.printStackTrace()
         }
     }
+
+
+//    val listener = object : ClickListener {
+//        override fun openScanItem(scanItem: ScanItem) {
+//            showDialog(scanItem)
+//        }
+//    }
+
 
 
 }

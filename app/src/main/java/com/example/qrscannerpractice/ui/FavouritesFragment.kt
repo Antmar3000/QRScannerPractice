@@ -1,49 +1,53 @@
 package com.example.qrscannerpractice.ui
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.qrscannerpractice.R
+import com.example.qrscannerpractice.ClickListener
+import com.example.qrscannerpractice.base.BaseFragment
 import com.example.qrscannerpractice.databinding.FragmentFavouritesBinding
+import com.example.qrscannerpractice.room.ScanItem
 import com.example.qrscannerpractice.viewmodels.ScanViewModel
+import dagger.hilt.android.AndroidEntryPoint
+
+@AndroidEntryPoint
+class FavouritesFragment : BaseFragment<FragmentFavouritesBinding>() {
 
 
-class FavouritesFragment : Fragment() {
+    private val viewModel: ScanViewModel by viewModels()
 
-    private lateinit var binding: FragmentFavouritesBinding
-
-    private val viewModel : ScanViewModel by lazy {
-        ViewModelProvider(requireActivity()).get(
-            ScanViewModel::class.java
-        )
-    }
-
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-
-        binding = FragmentFavouritesBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-    private fun setRecyclerView (){
-        viewModel.favouritesList.observe(viewLifecycleOwner) {
-            binding.favRecycler.apply {
-                layoutManager = LinearLayoutManager(activity)
-                adapter = ScanHistoryAdapter()
-            }
+    private val listener = object : ClickListener {
+        override fun openScanItem(scanItem: ScanItem) {
+            viewModel.onItemClicked(scanItem)
         }
+
+        override fun swipeItem(scanItem: ScanItem) {
+            viewModel.deleteItem(scanItem)
+        }
+
+    }
+    private val adapter = ScanHistoryAdapter(listener)
+    override val bindingInflater: (LayoutInflater, ViewGroup?, Boolean) -> FragmentFavouritesBinding =
+        FragmentFavouritesBinding::inflate
+
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        setRecyclerView()
     }
 
-    companion object {
-        @JvmStatic
-        fun newInstance () = FavouritesFragment()
+    private fun setRecyclerView() {
+        binding.favRecycler.apply {
+            layoutManager = LinearLayoutManager(activity)
+            adapter = this@FavouritesFragment.adapter
+        }
+        viewModel.favouritesList.observe(viewLifecycleOwner) {
+            adapter.submitList(it)
+        }
     }
 
 

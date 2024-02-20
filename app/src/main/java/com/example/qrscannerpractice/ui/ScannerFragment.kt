@@ -40,19 +40,9 @@ class ScannerFragment : Fragment(), ZBarScannerView.ResultHandler {
         zBarView.stopCamera()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        zBarView.stopCamera()
-    }
-
     override fun onResume() {
         super.onResume()
         zBarView.setResultHandler(this)
-        zBarView.startCamera()
-    }
-
-    override fun onStart() {
-        super.onStart()
         zBarView.startCamera()
     }
 
@@ -61,10 +51,7 @@ class ScannerFragment : Fragment(), ZBarScannerView.ResultHandler {
             Toast.makeText(context, R.string.empty_result, Toast.LENGTH_SHORT).show()
         else {
             val newResult = ScanItem(result!!.contents, false)
-            viewModel.insertItem(newResult)
-            activity?.let {
-                (it as MainActivity).showDialog(newResult)
-            }
+            viewModel.onItemScanned(newResult)
         }
 
     }

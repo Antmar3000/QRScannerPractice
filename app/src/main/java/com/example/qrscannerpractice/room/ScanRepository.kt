@@ -2,8 +2,9 @@ package com.example.qrscannerpractice.room
 
 import androidx.annotation.WorkerThread
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class ScanRepository (private val scanResultDao: ScanResultDao) {
+class ScanRepository @Inject constructor (private val scanResultDao: ScanResultDao) {
 
     val scanItems : Flow<List<ScanItem>> = scanResultDao.allItems()
     val favouriteItems: Flow<List<ScanItem>> = scanResultDao.favouriteItems()
