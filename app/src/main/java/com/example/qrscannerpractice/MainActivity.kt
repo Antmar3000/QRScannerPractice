@@ -30,8 +30,6 @@ class MainActivity : AppCompatActivity() {
     private val binding: ActivityMainBinding by lazy { ActivityMainBinding.inflate(layoutInflater) }
 
 
-//    private val viewModel: ScanViewModel by viewModels ()
-
     private val viewModel: ScanViewModel by viewModels()
 
     @Inject
