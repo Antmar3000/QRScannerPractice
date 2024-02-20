@@ -2,6 +2,7 @@ package com.example.qrscannerpractice.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.qrscannerpractice.room.ScanRepository
 import com.example.qrscannerpractice.room.ScanResultsDatabase
 import dagger.Module
 import dagger.Provides
@@ -24,4 +25,8 @@ object Module {
     @Provides
     @Singleton
     fun provideDao (db : ScanResultsDatabase) = db.scanResultDao()
+
+    @Provides
+    @Singleton
+    fun provideRepo (db: ScanResultsDatabase) = ScanRepository(db.scanResultDao())
 }
